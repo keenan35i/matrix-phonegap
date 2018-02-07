@@ -19,7 +19,7 @@ var domain = 'www.matrix-lms.com';
 var domainProtocol = 'https';
 
 //for regular app
-var loginUrl = domainProtocol + '://' + domain + '/app/launch?version=' + appVersion + '&mobile_app=true&redirected=true&payubiz_test_gateway=true';
+var loginUrl = domainProtocol + '://' + domain + '/app/launch?version=' + appVersion + '&mobile_app=true&redirected=true&payubiz_test_gateway=true&new_grading=true';
 var isBrandedApp = false;
 
 //for branded app

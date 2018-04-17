@@ -47,10 +47,6 @@ var app = {
         document.addEventListener('deviceready', this.onAppLaunch, false);
         document.addEventListener('deviceready', this.onDeviceReady, false);
 
-        document.addEventListener('backbutton', function(e) {
-          e.preventDefault();
-        }, false);
-
         app.checkConnection();
     },
 
@@ -577,7 +573,7 @@ var app = {
                 break;
             case 'updateSectionTitle':
                 if (typeof data.content != 'undefined') {
-                    $('header .sectionTitle h2').html(data.content);
+                    $('header .sectionTitle h1').html(data.content);
                 }
                 break;
             case 'clearStorage':
@@ -604,61 +600,39 @@ var app = {
                     app.updateStatusMessage('Downloading file...');
                     app.toggleLoader(true);
                     var URL = schoolProtocol + '://' + schoolDomain + data.content;
-                    var Folder_Name = 'Download';
                     var File_Name = data.content.split('/');
                     File_Name = File_Name[File_Name.length - 1].split('?');
                     File_Name = File_Name[0];
 
-                    window.requestFileSystem(LocalFileSystem.PERSISTENT, 0, fileSystemSuccess, fileSystemFail);
+                    window.requestFileSystem(LocalFileSystem.PERSISTENT, 0, fileSystemSuccess, requestFileSystemFail);
 
                     function fileSystemSuccess(fileSystem) {
                         var download_link = encodeURI(URL);
 
-                        var directoryEntry = fileSystem.root; // to get root path of directory
-                        directoryEntry.getDirectory(Folder_Name, {
+                        fileSystem.root.getFile(File_Name, {
                             create: true,
                             exclusive: false
-                        }, onDirectorySuccess, onDirectoryFail); // creating folder in sdcard
-                        var rootdir = fileSystem.root;
-                        var fp = rootdir.toURL(); // Returns Fulpath of local directory
-
-                        fp = fp + "/" + Folder_Name + "/" + File_Name; // fullpath and name of the file which we want to give
-                        // download function call
-                        filetransfer(download_link, fp);
-                    }
-
-                    function onDirectorySuccess(parent) {
-                        console.log('directory created successfully');
-                        // Directory created successfuly
-                    }
-
-                    function onDirectoryFail(error) {
-                        //Error while creating directory
-                        console.log("Unable to create new directory: " + error.code);
-                    }
-
-                    function fileSystemFail(evt) {
-                        //Unable to access file system
-                        console.log(evt.target.error.code);
-                    }
-
-                    function filetransfer(download_link, fp) {
-                        var fileTransfer = new FileTransfer();
-                        // File download function with URL and local path
-                        fileTransfer.download(download_link, fp,
-                            function(entry) {
-                                alert('The file was successfully downloaded, you can access it in /' + Folder_Name + '/' + File_Name + '.');
+                        }, function(fileEntry) {
+                            var localPath = fileEntry.fullPath,
+                                fileTransfer = new FileTransfer();
+                            fileTransfer.download(download_link, localPath, function(entry) {
+                                alert('The file was successfully downloaded, you can access it in the Downloads folder.');
                                 app.updateStatusMessage('');
                                 app.toggleLoader(false);
-                                console.log("download complete: " + entry.fullPath);
-                            },
-                            function(error) {
-                                //Download abort errors or download failed errors
-                                console.log("download error source " + error.source);
-                                console.log("download error target " + error.target);
-                                console.log("upload error code" + error.code);
-                            }
-                        );
+                            }, downloadFail);
+                        }, getFileFail);
+                    }
+
+                    function requestFileSystemFail(error) {
+                        console.log('requestFileSystem error: ' + JSON.stringify(error));
+                    }
+                    
+                    function getFileFail(error) {
+                        console.log('getFile error: ' + JSON.stringify(error));
+                    }
+                    
+                    function downloadFail(error) {
+                        console.log('download error: ' + JSON.stringify(error));
                     }
                 }
                 break;
@@ -714,9 +688,25 @@ var app = {
                     ssoWindow.close();
                 }
                 break;
+            case 'submitToBrowser':
+                var form = document.createElement("form");
+                form.setAttribute("method", "post");
+                form.setAttribute("action", data.url);
+
+                for(var i=0; i < data.params.length; i++){
+                    var field = document.createElement("input");
+                    field.setAttribute("type", "hidden");
+                    field.setAttribute("name", data.params[i].name);
+                    field.setAttribute("value", data.params[i].value);
+                    form.appendChild(field);
+                }
+               document.body.appendChild(form);
+               submitToPopup(form);
+                break;
             default:
                 return;
                 break;
+
         }
     },
     sendViewportData: function() {
@@ -729,7 +719,7 @@ var app = {
         }
         canLoadNotification = true;
         setTimeout(function(){
-        	canLoadNotification = false;
+            canLoadNotification = false;
         }, 1000);
     },
     onPause: function() {
@@ -843,7 +833,7 @@ var app = {
     refreshHeader: function() {
         //console.log("refreshing header");
         $('header').html(headerContent);
-        $('.sectionTitle h2').css('width', $('#mobileAppWrapper').width() - $('.sectionTitle + .quickLinks').outerWidth() - 250);
+        $('.sectionTitle h1').css('width', $('#mobileAppWrapper').width() - $('.sectionTitle + .quickLinks').outerWidth() - 250);
         dropdownClickEvents();
         lessonNavEvents();
         fix_mobile_title_wrapping();
@@ -854,7 +844,7 @@ var app = {
             $('nav#user-menu').trigger('open.mm');
         });
         $('header *').click(function(){
-        	app.disableRefreshHeader();
+            app.disableRefreshHeader();
         });
     },
     refreshLeftNav: function() {
@@ -910,63 +900,63 @@ var app = {
         $('#contentFrame').attr('src', schoolProtocol + '://' + schoolDomain + '/');
     },
     registerNotifications: function() {
-    	if (navigator.userAgent.match(/Android/i)) {
-    		var options = {
-    			android: {
-					senderID: androidSenderID,
-					clearBadge: true
-				}
-    		};
-    	} else {
-    		var options = {
-				ios: {
-					alert: true,
-					badge: true,
-					sound: true,
-					clearBadge: true
-				}
-    		};
-    	}
-		
-		var push = PushNotification.init(options);
-		
+        if (navigator.userAgent.match(/Android/i)) {
+            var options = {
+                android: {
+                    senderID: androidSenderID,
+                    clearBadge: true
+                }
+            };
+        } else {
+            var options = {
+                ios: {
+                    alert: true,
+                    badge: true,
+                    sound: true,
+                    clearBadge: true
+                }
+            };
+        }
+        
+        var push = PushNotification.init(options);
+        
         var pushToken = store.getItem('pushToken');
         if (pushToken) {
             app.storeToken(pushToken);
         } else {
             try {
-				push.on('registration', function(data) {
-					store.setItem('pushToken', data.registrationId);
+                push.on('registration', function(data) {
+                    store.setItem('pushToken', data.registrationId);
                     app.storeToken(data.registrationId);
-				});
+                });
             } catch (err) {
                 console.log("Error: " + err.message);
             }
         }
         
         push.on('notification', app.onNativeNotification);
-		push.on('error', function(e) {
-			console.log("Push plugin error" + e.message);
-		});
+        push.on('error', function(e) {
+            console.log("Push plugin error" + e.message);
+        });
     },
     onNativeNotification: function(data) {
-    	if(canLoadNotification){
-    		var item_id = /\(ID: ([0-9]*)\)$/.exec(data.message);
-			var currentSchool = store.getItem('currentSchool');
-			console.log('is alert, item_id: ' + JSON.stringify(item_id));
-			if (data.message.charAt(0) == 'M') {
-				console.log('loading: ' + currentSchool.replace('?mobile_app=true', 'inbox/show?message=' + item_id[1]));
-				app.toggleLoader(true);
-				app.updateStatusMessage('Loading message...');
-				$('#contentFrame').attr('src', currentSchool.replace('?mobile_app=true', 'inbox/show?message=' + item_id[1]));
-			} else {
-				console.log('loading: ' + currentSchool.replace('?mobile_app=true', 'notifications/show?notification=' + item_id[1]));
-				app.toggleLoader(true);
-				app.updateStatusMessage('Loading notification...');
-				$('#contentFrame').attr('src', currentSchool.replace('?mobile_app=true', 'notifications/show?notification=' + item_id[1]));
-			}
-			canLoadNotification = false;
-    	}
+        if(canLoadNotification){
+            var item_id = /\(ID: ([0-9]*)\)$/.exec(data.message);
+            var currentSchool = store.getItem('currentSchool');
+            console.log('is alert, item_id: ' + JSON.stringify(item_id));
+            if (data.message.charAt(0) == 'M') {
+                console.log('loading: ' + currentSchool.replace('?mobile_app=true', 'inbox/show?message=' + item_id[1]));
+                app.toggleLoader(true);
+                app.updateStatusMessage('Loading message...');
+                $('#contentFrame').attr('src', currentSchool.replace('?mobile_app=true', 'inbox/show?message=' + item_id[1]));
+            } else {
+                console.log('loading: ' + currentSchool.replace('?mobile_app=true', 'notifications/show?notification=' + item_id[1]));
+                app.toggleLoader(true);
+                app.updateStatusMessage('Loading notification...');
+                $('#contentFrame').attr('src', currentSchool.replace('?mobile_app=true', 'notifications/show?notification=' + item_id[1]));
+            }
+            canLoadNotification = false;
+        }
     },
     storeLoginCredentials: function(fileSystem) {
         console.log('storeLoginCredentials');
@@ -1102,12 +1092,12 @@ var app = {
         writer.write("");
     },
     disableRefreshHeader: function() {
-    	console.log('disable refresh header');
-    	canRefreshHeader = false;
+        console.log('disable refresh header');
+        canRefreshHeader = false;
     },
     enableRefreshHeader: function() {
-    	console.log('enable refresh header');
-    	canRefreshHeader = true;
+        console.log('enable refresh header');
+        canRefreshHeader = true;
     }
 };
 
@@ -1409,6 +1399,12 @@ function notification_mute() {
         el.data('enable', true);
         el.find('i').removeClass('audioOn').addClass('audioOff');
     }
+}
+
+function submitToPopup(f) {
+    var w = window.open('', 'form-target', 'location=yes');
+    f.target = 'form-target';
+    f.submit();
 }
 
 $(document).ready(function() {

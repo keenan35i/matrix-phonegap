@@ -2,9 +2,9 @@ var appVersion = '1.16';
 
 var store = window.localStorage;
 //var domain = 'www.edu-20.com';
-var domain = 'www.matrixlms.com';
+//var domain = 'www.matrixlms.com';
 //var domain = 'www.neolms.com';
-//var domain = 'www.matrix-lms.com';
+var domain = 'www.matrix-lms.com';
 
 //branded apps
 //var domain = 'mckesson.medpower.org';

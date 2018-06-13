@@ -1,10 +1,10 @@
 var appVersion = '1.16';
 
 var store = window.localStorage;
-//var domain = 'www.edu-20.com';
+var domain = 'www.edu-20.com';
 //var domain = 'www.matrixlms.com';
 //var domain = 'www.neolms.com';
-var domain = 'www.matrix-lms.com';
+//var domain = 'www.matrix-lms.com';
 
 //branded apps
 //var domain = 'mckesson.medpower.org';
@@ -15,8 +15,8 @@ var domain = 'www.matrix-lms.com';
 //var domain = 'ecampus.matrixlms.com';
 //var domain = 'www.cuohde.com';
 
-//var domainProtocol = 'http';
-var domainProtocol = 'https';
+var domainProtocol = 'http';
+//var domainProtocol = 'https';
 
 //for regular app
 var loginUrl = domainProtocol + '://' + domain + '/app/launch?version=' + appVersion + '&mobile_app=true&redirected=true&new_grading=true&payubiz_test_gateway=true';
